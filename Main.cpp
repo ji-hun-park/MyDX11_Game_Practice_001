@@ -1,4 +1,5 @@
 #include <windows.h>
+#include <wrl/client.h> // ComPtr용
 
 // DirectX 11 관련 헤더
 #include <d3d11.h>
@@ -11,10 +12,17 @@
 #pragma comment(lib, "d3dcompiler.lib")
 
 using namespace DirectX; // DirectXMath 네임스페이스
+using Microsoft::WRL::ComPtr; // ComPtr 스마트 포인터
 
 // 전역 변수 (나중에는 클래스로 관리해야 함)
 HINSTANCE g_hInst = nullptr;
 HWND g_hWnd = nullptr;
+
+// DirectX 핵심 객체들
+ComPtr<ID3D11Device> g_pd3dDevice;                  // 자원 생성 공장
+ComPtr<ID3D11DeviceContext> g_pImmediateContext;    // 그리기 명령 작업자
+ComPtr<IDXGISwapChain> g_pSwapChain;                // 더블 버퍼링 관리자
+ComPtr<ID3D11RenderTargetView> g_pRenderTargetView; // 렌더링 타겟 (도화지)
 
 // 윈도우 프로시저 (이벤트 처리기)
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
