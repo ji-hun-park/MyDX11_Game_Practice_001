@@ -36,6 +36,72 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
     return 0;
 }
 
+HRESULT InitD3D(HWND hWnd) {
+    HRESULT hr = S_OK;
+
+    // 1. 스왑 체인 설정 구조체 작성
+    DXGI_SWAP_CHAIN_DESC sd = { 0 };
+    sd.BufferCount = 1;                                     // 백버퍼 개수 (1개면 충분)
+    sd.BufferDesc.Width = 800;                              // 해상도 너비
+    sd.BufferDesc.Height = 600;                             // 해상도 높이
+    sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;      // 색상 포맷 (RGBA 32비트)
+    sd.BufferDesc.RefreshRate.Numerator = 60;               // 주사율 60Hz
+    sd.BufferDesc.RefreshRate.Denominator = 1;
+    sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;       // "이 버퍼에 그림 그릴거임"
+    sd.OutputWindow = hWnd;                                 // 그림 그릴 윈도우 핸들
+    sd.SampleDesc.Count = 1;                                // 멀티샘플링(MSAA) 끄기
+    sd.SampleDesc.Quality = 0;
+    sd.Windowed = TRUE;                                     // 창 모드
+
+    // 2. 장치(Device), 컨텍스트(Context), 스왑체인(SwapChain) 동시 생성
+    // D3D_FEATURE_LEVEL_11_0 을 지원하는 그래픽 카드를 요청합니다.
+    D3D_FEATURE_LEVEL featureLevels[] = { D3D_FEATURE_LEVEL_11_0 };
+    UINT numFeatureLevels = ARRAYSIZE(featureLevels);
+
+    hr = D3D11CreateDeviceAndSwapChain(
+        nullptr,                    // 기본 어댑터(그래픽카드) 사용
+        D3D_DRIVER_TYPE_HARDWARE,   // 하드웨어 가속 사용 (필수!)
+        nullptr,
+        0,                          // 플래그 (디버그 시 D3D11_CREATE_DEVICE_DEBUG 사용 가능)
+        featureLevels, numFeatureLevels,
+        D3D11_SDK_VERSION,
+        &sd,
+        g_pSwapChain.GetAddressOf(),
+        g_pd3dDevice.GetAddressOf(),
+        nullptr,
+        g_pImmediateContext.GetAddressOf()
+    );
+
+    if (FAILED(hr)) return hr;
+
+    // 3. 렌더 타겟 뷰(RTV) 생성
+    // 스왑 체인에서 백 버퍼(그림 그릴 종이)를 가져옵니다.
+    ComPtr<ID3D11Texture2D> pBackBuffer;
+    hr = g_pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)pBackBuffer.GetAddressOf());
+    if (FAILED(hr)) return hr;
+
+    // 가져온 백 버퍼를 타겟으로 뷰를 만듭니다.
+    hr = g_pd3dDevice->CreateRenderTargetView(pBackBuffer.Get(), nullptr, g_pRenderTargetView.GetAddressOf());
+    if (FAILED(hr)) return hr;
+
+    // 4. 렌더 타겟 설정 (Output Merger 단계)
+    // "이제부터 이 도화지(RTV)에 그릴 거야"라고 작업자(Context)에게 지시
+    g_pImmediateContext->OMSetRenderTargets(1, g_pRenderTargetView.GetAddressOf(), nullptr);
+
+    // 5. 뷰포트(Viewport) 설정 (Rasterizer 단계)
+    // 도화지의 어느 영역에 그릴지 설정 (전체 화면)
+    D3D11_VIEWPORT vp;
+    vp.Width = 800.0f;
+    vp.Height = 600.0f;
+    vp.MinDepth = 0.0f;
+    vp.MaxDepth = 1.0f;
+    vp.TopLeftX = 0;
+    vp.TopLeftY = 0;
+    g_pImmediateContext->RSSetViewports(1, &vp);
+
+    return S_OK;
+}
+
 // 메인 진입점
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nCmdShow) {
     g_hInst = hInstance;
