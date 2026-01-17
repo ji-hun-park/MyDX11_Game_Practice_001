@@ -205,10 +205,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
     ShowWindow(g_hWnd, nCmdShow);
     UpdateWindow(g_hWnd);
 
-    // 3. DirectX 초기화 호출
-    if (FAILED(InitD3D(g_hWnd))) {
-        return 0; // 초기화 실패 시 종료
-    }
+    // 3. DirectX 초기화 호출, 파이프라인 초기화 호출
+    if (FAILED(InitD3D(g_hWnd))) return 0; // 초기화 실패 시 종료
+    if (FAILED(InitPipeline())) return 0;
 
     // 4. 메인 루프 (유니티의 엔진 루프와 같음)
     MSG msg = { 0 };
