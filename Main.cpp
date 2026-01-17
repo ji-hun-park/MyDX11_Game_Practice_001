@@ -211,6 +211,20 @@ void Render() {
     g_pImmediateContext->VSSetShader(g_pVertexShader.Get(), nullptr, 0);
     g_pImmediateContext->PSSetShader(g_pPixelShader.Get(), nullptr, 0);
 
+    // IA(Input Assembler) 설정 및 그리기
+    // A. 정점 버퍼를 파이프라인에 묶기
+    UINT stride = sizeof(SimpleVertex); // 정점 하나가 몇 바이트인지
+    UINT offset = 0;                    // 버퍼 시작부터 몇 바이트 띄우고 읽을지
+    g_pImmediateContext->IASetVertexBuffers(0, 1, g_pVertexBuffer.GetAddressOf(), &stride, &offset);
+
+    // B. 도형의 위상(Topology) 설정
+    // "점 3개마다 끊어서 삼각형 하나로 인식해라" (Triangle List)
+    g_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+    // C. 그리기 명령 (GPU야 일해라!)
+    // Draw(정점 개수, 시작 인덱스)
+    g_pImmediateContext->Draw(3, 0);
+
     // 3. 보여주기 (Swap Buffer)
     // 백 버퍼와 프론트 버퍼 교체
     g_pSwapChain->Present(0, 0); // 첫 번째 인자: 1이면 VSync 켜기, 0이면 끄기
