@@ -172,6 +172,31 @@ HRESULT InitPipeline() {
     hr = g_pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, g_pPixelShader.GetAddressOf());
     if (FAILED(hr)) return hr;
 
+    // 1. 버퍼, 삼각형을 이룰 점 3개 정의 (NDC 좌표계: 화면 중앙 0,0 / 우측상단 1,1)
+    // 중요: 시계 방향(Clockwise) 순서로 정의해야 앞면으로 인식되어 그려집니다!
+    SimpleVertex vertices[] =
+    {
+        // 위치(x, y, z)                // 색상(r, g, b, a)
+        { XMFLOAT3(0.0f,  0.5f, 0.5f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) }, // 위쪽 (빨강)
+        { XMFLOAT3(0.5f, -0.5f, 0.5f), XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f) }, // 우측 하단 (초록)
+        { XMFLOAT3(-0.5f, -0.5f, 0.5f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f) }, // 좌측 하단 (파랑)
+    };
+
+    // 2. 버퍼 설정 구조체 (설계도)
+    D3D11_BUFFER_DESC bd = { 0 };
+    bd.Usage = D3D11_USAGE_DEFAULT;             // GPU가 읽고 쓰기 좋게 배치 (CPU 접근 불가)
+    bd.ByteWidth = sizeof(SimpleVertex) * 3;    // 버퍼의 총 바이트 크기
+    bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;    // "이것은 버텍스 버퍼다"
+    bd.CPUAccessFlags = 0;                      // CPU가 내용 수정 안 함
+
+    // 3. 초기 데이터 설정 (내용물)
+    D3D11_SUBRESOURCE_DATA InitData = { 0 };
+    InitData.pSysMem = vertices; // 위에서 만든 배열의 포인터
+
+    // 4. 버퍼 생성 (VRAM 할당 및 데이터 복사)
+    hr = g_pd3dDevice->CreateBuffer(&bd, &InitData, g_pVertexBuffer.GetAddressOf());
+    if (FAILED(hr)) return hr;
+
     return S_OK;
 }
 
