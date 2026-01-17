@@ -174,7 +174,9 @@ void Render() {
     float ClearColor[4] = { 0.0f, 0.125f, 0.3f, 1.0f };
     g_pImmediateContext->ClearRenderTargetView(g_pRenderTargetView.Get(), ClearColor);
 
-    // 2. ... 여기서 삼각형 등을 그립니다 ...
+    // 2. 셰이더 장착
+    g_pImmediateContext->VSSetShader(g_pVertexShader.Get(), nullptr, 0);
+    g_pImmediateContext->PSSetShader(g_pPixelShader.Get(), nullptr, 0);
 
     // 3. 보여주기 (Swap Buffer)
     // 백 버퍼와 프론트 버퍼 교체
