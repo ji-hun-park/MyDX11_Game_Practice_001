@@ -1,3 +1,15 @@
+// --------------------------------------------------------
+// Constant Buffer (cbuffer)
+// CPU에서 매 프레임 갱신해서 보내줄 데이터(행렬)입니다.
+// register(b0): 0번 슬롯(Slot)을 사용하겠다는 뜻
+// --------------------------------------------------------
+cbuffer ConstantBuffer : register(b0)
+{
+    matrix World; // 물체의 위치/회전/크기
+    matrix View; // 카메라의 위치/각도
+    matrix Projection; // 카메라의 렌즈(원근감)
+}
+
 // 1. 입력 데이터 구조체 (C++에서 보낼 데이터와 모양이 같아야 함)
 struct VS_INPUT
 {
