@@ -36,6 +36,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
     return 0;
 }
 
+// Direct3D 초기화 함수
 HRESULT InitD3D(HWND hWnd) {
     HRESULT hr = S_OK;
 
@@ -100,6 +101,20 @@ HRESULT InitD3D(HWND hWnd) {
     g_pImmediateContext->RSSetViewports(1, &vp);
 
     return S_OK;
+}
+
+// 렌더링 함수
+void Render() {
+    // 1. 화면 지우기 (Clear)
+    // RGBA (파란색 계열: Cornflower Blue)
+    float ClearColor[4] = { 0.0f, 0.125f, 0.3f, 1.0f };
+    g_pImmediateContext->ClearRenderTargetView(g_pRenderTargetView.Get(), ClearColor);
+
+    // 2. ... 여기서 삼각형 등을 그립니다 ...
+
+    // 3. 보여주기 (Swap Buffer)
+    // 백 버퍼와 프론트 버퍼 교체
+    g_pSwapChain->Present(0, 0); // 첫 번째 인자: 1이면 VSync 켜기, 0이면 끄기
 }
 
 // 메인 진입점
