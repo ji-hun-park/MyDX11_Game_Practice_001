@@ -24,6 +24,11 @@ ComPtr<ID3D11DeviceContext> g_pImmediateContext;    // 그리기 명령 작업자
 ComPtr<IDXGISwapChain> g_pSwapChain;                // 더블 버퍼링 관리자
 ComPtr<ID3D11RenderTargetView> g_pRenderTargetView; // 렌더링 타겟 (도화지)
 
+// 쉐이더 관련 전역 변수
+ComPtr<ID3D11VertexShader> g_pVertexShader; // 정점 셰이더 객체
+ComPtr<ID3D11PixelShader> g_pPixelShader;   // 픽셀 셰이더 객체
+ComPtr<ID3D11InputLayout> g_pVertexLayout;  // 데이터 서식 (중요!)
+
 // 윈도우 프로시저 (이벤트 처리기)
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
     switch (message) {
