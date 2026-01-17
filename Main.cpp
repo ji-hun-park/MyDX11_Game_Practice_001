@@ -108,6 +108,65 @@ HRESULT InitD3D(HWND hWnd) {
     return S_OK;
 }
 
+// 셰이더 컴파일 및 생성 함수
+HRESULT InitPipeline() {
+    HRESULT hr = S_OK;
+    ComPtr<ID3DBlob> pVSBlob = nullptr; // 컴파일된 셰이더 바이너리(기계어)
+    ComPtr<ID3DBlob> pErrorBlob = nullptr;
+    ComPtr<ID3DBlob> pPSBlob = nullptr;
+
+    // 1. Vertex Shader 컴파일
+    // D3DCompileFromFile(파일경로, 매크로, include, 함수이름, 셰이더버전, 플래그1, 플래그2, 결과, 에러)
+    hr = D3DCompileFromFile(L"Shaders.hlsl", nullptr, nullptr, "VS", "vs_4_0", 0, 0, pVSBlob.GetAddressOf(), pErrorBlob.GetAddressOf());
+
+    if (FAILED(hr)) {
+        if (pErrorBlob) {
+            OutputDebugStringA((char*)pErrorBlob->GetBufferPointer()); // 에러 메시지 출력
+        }
+        return hr;
+    }
+
+    // 2. Vertex Shader 객체 생성
+    hr = g_pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, g_pVertexShader.GetAddressOf());
+    if (FAILED(hr)) return hr;
+
+    // 3. Input Layout 생성 (매우 중요!)
+    // CPU의 데이터 구조체와 GPU의 HLSL 구조체를 매칭시켜주는 '설명서'입니다.
+    D3D11_INPUT_ELEMENT_DESC layout[] =
+    {
+        // "POSITION": HLSL의 시맨틱 이름
+        // 0: 시맨틱 인덱스 (POSITION0)
+        // DXGI_FORMAT_R32G32B32_FLOAT: float3 (x, y, z)
+        // 0: 입력 슬롯 (나중에 Vertex Buffer 넣을 때 0번 슬롯에 넣겠다는 뜻)
+        // 0: 오프셋 (구조체 시작부터 0바이트 지점)
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+
+        // "COLOR": HLSL의 시맨틱 이름
+        // 12: 오프셋 (float3가 4byte * 3 = 12byte니까 그 다음부터 시작)
+        { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+    };
+    UINT numElements = ARRAYSIZE(layout);
+
+    hr = g_pd3dDevice->CreateInputLayout(layout, numElements, pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), g_pVertexLayout.GetAddressOf());
+    if (FAILED(hr)) return hr;
+
+    // 4. Input Layout을 컨텍스트에 적용
+    g_pImmediateContext->IASetInputLayout(g_pVertexLayout.Get());
+
+    // 5. Pixel Shader 컴파일
+    hr = D3DCompileFromFile(L"Shaders.hlsl", nullptr, nullptr, "PS", "ps_4_0", 0, 0, pPSBlob.GetAddressOf(), pErrorBlob.GetAddressOf());
+    if (FAILED(hr)) {
+        if (pErrorBlob) OutputDebugStringA((char*)pErrorBlob->GetBufferPointer());
+        return hr;
+    }
+
+    // 6. Pixel Shader 객체 생성
+    hr = g_pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, g_pPixelShader.GetAddressOf());
+    if (FAILED(hr)) return hr;
+
+    return S_OK;
+}
+
 // 렌더링 함수
 void Render() {
     // 1. 화면 지우기 (Clear)
