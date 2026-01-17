@@ -141,7 +141,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
     ShowWindow(g_hWnd, nCmdShow);
     UpdateWindow(g_hWnd);
 
-    // 3. 메인 루프 (유니티의 엔진 루프와 같음)
+    // 3. DirectX 초기화 호출
+    if (FAILED(InitD3D(g_hWnd))) {
+        return 0; // 초기화 실패 시 종료
+    }
+
+    // 4. 메인 루프 (유니티의 엔진 루프와 같음)
     MSG msg = { 0 };
     while (msg.message != WM_QUIT) {
         // 윈도우 메시지가 있으면 처리 (입력 등)
@@ -151,7 +156,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
         }
         else {
             // 메시지가 없을 때 게임 로직 실행 (Update & Render)
-            // 여기에 나중에 Game->Run() 같은 코드가 들어갑니다.
+            // 렌더링 함수 호출
+            Render();
         }
     }
 
