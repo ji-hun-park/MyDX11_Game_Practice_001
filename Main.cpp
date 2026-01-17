@@ -11,7 +11,7 @@
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3dcompiler.lib")
 
-using namespace DirectX; // DirectXMath 네임스페이스로 라이브러리 사용
+using namespace DirectX;      // DirectXMath 네임스페이스로 라이브러리 사용
 using Microsoft::WRL::ComPtr; // ComPtr 스마트 포인터
 
 // 전역 변수 (나중에는 클래스로 관리해야 함)
@@ -29,12 +29,24 @@ ComPtr<ID3D11VertexShader> g_pVertexShader; // 정점 셰이더 객체
 ComPtr<ID3D11PixelShader> g_pPixelShader;   // 픽셀 셰이더 객체
 ComPtr<ID3D11InputLayout> g_pVertexLayout;  // 데이터 서식 (중요!)
 ComPtr<ID3D11Buffer> g_pVertexBuffer;       // 버텍스 버퍼 추가
+ComPtr<ID3D11Buffer> g_pConstantBuffer;     // 상수 버퍼 객체
+XMMATRIX g_World;
+XMMATRIX g_View;
+XMMATRIX g_Projection;
 
 // C++용 정점 구조체
 struct SimpleVertex
 {
     XMFLOAT3 Pos;    // x, y, z (12 bytes) - HLSL의 float4 Pos에 매핑됨 (w는 자동 1.0)
     XMFLOAT4 Color;  // r, g, b, a (16 bytes)
+};
+
+// HLSL의 cbuffer와 바이트 크기가 맞아야 함
+struct ConstantBuffer
+{
+    XMMATRIX mWorld;
+    XMMATRIX mView;
+    XMMATRIX mProjection;
 };
 
 // 윈도우 프로시저 (이벤트 처리기)
