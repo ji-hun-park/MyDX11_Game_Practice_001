@@ -184,7 +184,7 @@ HRESULT InitPipeline() {
     hr = g_pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, g_pPixelShader.GetAddressOf());
     if (FAILED(hr)) return hr;
 
-    // 1. 버퍼, 삼각형을 이룰 점 3개 정의 (NDC 좌표계: 화면 중앙 0,0 / 우측상단 1,1)
+    // 1. 버텍스 버퍼, 삼각형을 이룰 점 3개 정의 (NDC 좌표계: 화면 중앙 0,0 / 우측상단 1,1)
     // 중요: 시계 방향(Clockwise) 순서로 정의해야 앞면으로 인식되어 그려집니다!
     SimpleVertex vertices[] =
     {
@@ -208,6 +208,30 @@ HRESULT InitPipeline() {
     // 4. 버퍼 생성 (VRAM 할당 및 데이터 복사)
     hr = g_pd3dDevice->CreateBuffer(&bd, &InitData, g_pVertexBuffer.GetAddressOf());
     if (FAILED(hr)) return hr;
+
+    // 1. 상수 버퍼 생성
+    D3D11_BUFFER_DESC bd = { 0 };
+    bd.Usage = D3D11_USAGE_DEFAULT;
+    bd.ByteWidth = sizeof(ConstantBuffer);      // 크기 (64 * 3 = 192 bytes)
+    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;  // "이것은 상수 버퍼다"
+    bd.CPUAccessFlags = 0;
+
+    hr = g_pd3dDevice->CreateBuffer(&bd, nullptr, g_pConstantBuffer.GetAddressOf());
+    if (FAILED(hr)) return hr;
+
+    // 2. 행렬 초기화 (카메라 세팅)
+    // 월드 행렬: 단위 행렬(Identity)로 시작
+    g_World = XMMatrixIdentity();
+
+    // 뷰 행렬: 카메라 위치(0, 0, -5)에서 원점(0, 0, 0)을 바라봄
+    XMVECTOR Eye = XMVectorSet(0.0f, 0.0f, -5.0f, 0.0f);
+    XMVECTOR At = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
+    XMVECTOR Up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+    g_View = XMMatrixLookAtLH(Eye, At, Up); // LH: Left-Handed (왼손 좌표계)
+
+    // 프로젝션 행렬: 
+    // FOV(시야각) 90도(PI/2), 화면비 800/600, 근접 0.01, 원거리 100
+    g_Projection = XMMatrixPerspectiveFovLH(XM_PIDIV2, 800.0f / 600.0f, 0.01f, 100.0f);
 
     return S_OK;
 }
