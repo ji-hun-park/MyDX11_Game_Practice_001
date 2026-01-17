@@ -32,11 +32,23 @@ PS_INPUT VS(VS_INPUT input)
 {
     PS_INPUT output;
     
-    // 지금은 행렬 연산 없이 입력받은 좌표를 그대로 넘깁니다.
-    // (좌표계: 화면 중앙이 0,0 / 우측이 +1, 좌측이 -1)
-    output.Pos = input.Pos;
+    // 입력받은 정점(Pos)에 W-V-P 행렬을 차례대로 곱합니다.
+    // 순서 중요: 정점 * 월드 * 뷰 * 프로젝션
     
-    // 색상도 그대로 넘깁니다.
+    float4 pos = input.Pos;
+    
+    // 1. 월드 변환 (로컬 -> 월드 공간)
+    pos = mul(pos, World);
+    
+    // 2. 뷰 변환 (월드 -> 카메라 공간)
+    pos = mul(pos, View);
+    
+    // 3. 프로젝션 변환 (카메라 -> 클립 공간/화면)
+    pos = mul(pos, Projection);
+    
+    output.Pos = pos;
+    
+    // 색상은 그대로 넘깁니다.
     output.Color = input.Color;
     
     return output;
