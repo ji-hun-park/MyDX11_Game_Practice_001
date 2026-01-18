@@ -210,13 +210,13 @@ HRESULT InitPipeline() {
     if (FAILED(hr)) return hr;
 
     // 1. 상수 버퍼 생성
-    D3D11_BUFFER_DESC bd = { 0 };
-    bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = sizeof(ConstantBuffer);      // 크기 (64 * 3 = 192 bytes)
-    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;  // "이것은 상수 버퍼다"
-    bd.CPUAccessFlags = 0;
+    D3D11_BUFFER_DESC cbd = { 0 };
+    cbd.Usage = D3D11_USAGE_DEFAULT;
+    cbd.ByteWidth = sizeof(ConstantBuffer);      // 크기 (64 * 3 = 192 bytes)
+    cbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;  // "이것은 상수 버퍼다"
+    cbd.CPUAccessFlags = 0;
 
-    hr = g_pd3dDevice->CreateBuffer(&bd, nullptr, g_pConstantBuffer.GetAddressOf());
+    hr = g_pd3dDevice->CreateBuffer(&cbd, nullptr, g_pConstantBuffer.GetAddressOf());
     if (FAILED(hr)) return hr;
 
     // 2. 행렬 초기화 (카메라 세팅)
@@ -238,12 +238,48 @@ HRESULT InitPipeline() {
 
 // 렌더링 함수
 void Render() {
-    // 1. 화면 지우기 (Clear)
+    // 0. 화면 지우기 (Clear)
     // RGBA (파란색 계열: Cornflower Blue)
     float ClearColor[4] = { 0.0f, 0.125f, 0.3f, 1.0f };
     g_pImmediateContext->ClearRenderTargetView(g_pRenderTargetView.Get(), ClearColor);
 
-    // 2. 셰이더 장착
+    // ---------------------------------------------------------
+    // 1. 애니메이션 로직 (Update)
+    // ---------------------------------------------------------
+
+    // 시간을 이용해 회전 각도 계산 (GetTickCount64 사용)
+    static ULONGLONG timeStart = 0;
+    ULONGLONG timeCur = GetTickCount64();
+    if (timeStart == 0) timeStart = timeCur;
+    float t = (timeCur - timeStart) / 1000.0f; // 초 단위 시간
+
+    // Y축 기준 회전 행렬 생성 (빙글빙글)
+    g_World = XMMatrixRotationY(t);
+
+
+    // ---------------------------------------------------------
+    // 2. GPU로 데이터 전송 (Update Subresource)
+    // ---------------------------------------------------------
+    ConstantBuffer cb;
+    // Transpose(전치)를 꼭 해줘야 HLSL이 올바르게 읽습니다!
+    // C++(DirectXMath)은 행 우선(Row-Major) 행렬을 쓰지만, HLSL은 기본적으로 열 우선(Column-Major) 행렬을 기대합니다.
+    // 그래서 데이터를 보내기 전에 전치(Transpose) 해줘야 합니다.
+    cb.mWorld = XMMatrixTranspose(g_World);
+    cb.mView = XMMatrixTranspose(g_View);
+    cb.mProjection = XMMatrixTranspose(g_Projection);
+
+    // 컨텍스트를 이용해 GPU 메모리 갱신
+    g_pImmediateContext->UpdateSubresource(g_pConstantBuffer.Get(), 0, nullptr, &cb, 0, 0);
+
+
+    // ---------------------------------------------------------
+    // 3. 파이프라인 설정 및 그리기
+    // ---------------------------------------------------------
+
+    // VS 단계에 상수 버퍼 연결 (0번 슬롯)
+    g_pImmediateContext->VSSetConstantBuffers(0, 1, g_pConstantBuffer.GetAddressOf());
+
+    // 셰이더 장착
     g_pImmediateContext->VSSetShader(g_pVertexShader.Get(), nullptr, 0);
     g_pImmediateContext->PSSetShader(g_pPixelShader.Get(), nullptr, 0);
 
@@ -261,7 +297,7 @@ void Render() {
     // Draw(정점 개수, 시작 인덱스)
     g_pImmediateContext->Draw(3, 0);
 
-    // 3. 보여주기 (Swap Buffer)
+    // D. 보여주기 (Swap Buffer)
     // 백 버퍼와 프론트 버퍼 교체
     g_pSwapChain->Present(0, 0); // 첫 번째 인자: 1이면 VSync 켜기, 0이면 끄기
 }
